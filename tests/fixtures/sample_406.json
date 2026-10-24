@@ -1,0 +1,6 @@
+{
+  "status_code": 406,
+  "body": {
+    "message": "JSON syntax error, please refer to the manual to check the input JSON content"
+  }
+}

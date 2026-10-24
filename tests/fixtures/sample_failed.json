@@ -1,0 +1,15 @@
+{
+  "status_code": 200,
+  "body": [
+    {
+      "status": "FAILED",
+      "object": {
+        "responseStatusCode": 3,
+        "productId": 0,
+        "coordinate": ".........",
+        "vectorId": 999999999,
+        "vectorDataPoint": []
+      }
+    }
+  ]
+}
