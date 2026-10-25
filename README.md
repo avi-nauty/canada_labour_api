@@ -1,6 +1,6 @@
 # Canada Labour API
 
-A small FastAPI service I'm building in front of Statistics Canada's Web Data Service. The goal is to let a caller ask for labour data in plain terms (for example, Ontario unemployment for ages 15-24, last 12 months) without knowing StatCan's internal series IDs, and to handle the ways StatCan's API can fail.
+A small FastAPI service that I'm building in front of Statistics Canada's Web Data Service. The goal is to let a caller ask for labour data in plain terms (for example, Ontario unemployment for ages 15-24, last 12 months) without knowing StatCan's internal series IDs, and to handle the ways StatCan's API can fail.
 
 **Status: work in progress.** This is a portfolio project, not a product. The data is published monthly, so nothing here is real-time.
 
