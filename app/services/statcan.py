@@ -32,9 +32,9 @@ _client = httpx.Client(verify=_ctx, timeout=httpx.Timeout(30, connect=5))
     wait=wait_random_exponential(multiplier=1, max=10),
     reraise=True)
 
-def fetch_latest(vector_id: int, periods: int) -> list[dict]:
+def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -> list[dict]:
     body = [{"vectorId": vector_id, "latestN": periods}]
-    response = _client.post(URL, json=body)
+    response = client.post(URL, json=body)
     if response.status_code == 406:
         raise BadRequestError(f"StatCan rejected the request: {response.text}")
     if response.status_code == 409:
