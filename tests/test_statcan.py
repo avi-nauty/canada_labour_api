@@ -4,7 +4,14 @@ import httpx
 import pytest
 from tenacity import wait_none
 
-from app.services.statcan import BadRequestError, SeriesNotFoundError, fetch_latest
+from app.services.statcan import (
+    BadRequestError,
+    RetryableError,
+    SeriesNotFoundError,
+    StatCanError,
+    TableLockedError,
+    fetch_latest,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -79,3 +86,61 @@ def test_retries_503_then_succeeds():
 
     assert len(result) == 12
     assert len(calls) == 3
+
+def test_503_every_time_gives_up_after_four_calls():
+    always_503 = {"status_code": 503, "body": {}}
+    calls = []
+    client = make_client(fixture_handler(always_503, calls))
+
+    with pytest.raises(RetryableError):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 4
+
+def test_429_is_retried_then_raises_retryable_error():
+    rate_limited = {"status_code": 429, "body": {}}
+    calls = []
+    client = make_client(fixture_handler(rate_limited, calls))
+
+    with pytest.raises(RetryableError):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 4
+
+
+def test_409_is_retried_then_raises_table_locked_error():
+    locked = {"status_code": 409, "body": {}}
+    calls = []
+    client = make_client(fixture_handler(locked, calls))
+
+    with pytest.raises(TableLockedError):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 4
+
+
+def test_timeout_is_retried_then_original_error_is_raised():
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        raise httpx.ConnectTimeout("simulated timeout")
+
+    client = make_client(handler)
+
+    with pytest.raises(httpx.ConnectTimeout):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 4
+
+
+def test_unexpected_4xx_fails_immediately_with_plain_statcan_error():
+    not_found = {"status_code": 404, "body": {}}
+    calls = []
+    client = make_client(fixture_handler(not_found, calls))
+
+    with pytest.raises(StatCanError) as excinfo:
+        fetch_latest(2062815, 12, client=client)
+
+    assert excinfo.type is StatCanError
+    assert len(calls) == 1
