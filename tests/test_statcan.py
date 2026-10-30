@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
-
 import httpx
-
 import pytest
+from tenacity import wait_none
 
 from app.services.statcan import BadRequestError, SeriesNotFoundError, fetch_latest
 
@@ -17,6 +16,18 @@ def load_fixture(name: str) -> dict:
 
 def make_client(handler) -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(handler))
+
+@pytest.fixture(autouse=True)
+def no_retry_wait(monkeypatch):
+    monkeypatch.setattr(fetch_latest.retry, "wait", wait_none())
+
+def sequence_handler(responses: list, calls: list):
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        status, body = responses[len(calls) - 1]
+        return httpx.Response(status, json=body)
+
+    return handler
 
 def fixture_handler(fixture: dict, calls: list):
     def handler(request: httpx.Request) -> httpx.Response:
@@ -57,3 +68,14 @@ def test_bad_request_raises_and_is_not_retried():
         fetch_latest(9999999999, 3, client=client)
 
     assert len(calls) == 1
+
+def test_retries_503_then_succeeds():
+    success = load_fixture("sample_success.json")
+    responses = [(503, {}), (503, {}), (success["status_code"], success["body"])]
+    calls = []
+    client = make_client(sequence_handler(responses, calls))
+
+    result = fetch_latest(2062815, 12, client=client)
+
+    assert len(result) == 12
+    assert len(calls) == 3
