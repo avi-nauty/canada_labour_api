@@ -18,6 +18,8 @@ class RetryableError(StatCanError):
 
 class TableLockedError(StatCanError):
     pass
+class UnexpectedResponseError(StatCanError):
+    pass
 
 URL = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
 
@@ -31,7 +33,6 @@ _client = httpx.Client(verify=_ctx, timeout=httpx.Timeout(30, connect=5))
     stop=stop_after_attempt(4),
     wait=wait_random_exponential(multiplier=1, max=10),
     reraise=True)
-
 def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -> list[dict]:
     body = [{"vectorId": vector_id, "latestN": periods}]
     response = client.post(URL, json=body)
@@ -45,11 +46,17 @@ def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -
         raise RetryableError(f"StatCan server error (HTTP {response.status_code}): {response.text}")
     if response.status_code != 200:
         raise StatCanError(f"Unexpected HTTP status {response.status_code}: {response.text}")
-    record = response.json()[0]
-    if record["status"] != "SUCCESS":
-        code = record["object"]["responseStatusCode"]
-        raise SeriesNotFoundError(
-            f"Vector {vector_id} not found (responseStatusCode {code})"
-        )
+    try:
+        record = response.json()[0]
+        if record["status"] != "SUCCESS":
+            code = record["object"]["responseStatusCode"]
+            raise SeriesNotFoundError(
+                f"Vector {vector_id} not found (responseStatusCode {code})"
+            )
+        return record["object"]["vectorDataPoint"]
+    except (ValueError, KeyError, IndexError, TypeError) as e:
+        raise UnexpectedResponseError(
+            f"Unexpected reply shape from StatCan: {response.text[:200]}"
+        ) from e
 
     return record["object"]["vectorDataPoint"]

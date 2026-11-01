@@ -9,6 +9,7 @@ from app.services.statcan import (
     RetryableError,
     SeriesNotFoundError,
     StatCanError,
+    UnexpectedResponseError,
     TableLockedError,
     fetch_latest,
 )
@@ -143,4 +144,14 @@ def test_unexpected_4xx_fails_immediately_with_plain_statcan_error():
         fetch_latest(2062815, 12, client=client)
 
     assert excinfo.type is StatCanError
+    assert len(calls) == 1
+
+def test_unexpected_reply_shape_raises_and_is_not_retried():
+    weird = {"status_code": 200, "body": {"oops": 1}}
+    calls = []
+    client = make_client(fixture_handler(weird, calls))
+
+    with pytest.raises(UnexpectedResponseError):
+        fetch_latest(2062815, 12, client=client)
+
     assert len(calls) == 1
