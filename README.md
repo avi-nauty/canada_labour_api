@@ -27,7 +27,7 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 
 ## Data source
 
-Statistics Canada, Table 14-10-0287, *Labour force characteristics, monthly, seasonally adjusted and trend-cycle*. Contains information licensed under the Statistics Canada Open Licence.
+Statistics Canada, Table 14-10-0287, *Labour force characteristics, monthly, seasonally adjusted and trend-cycle*. Adapted from Statistics Canada, Table 14-10-0287, *Labour force characteristics, monthly, seasonally adjusted and trend-cycle*, data through September 2026. This does not constitute an endorsement by Statistics Canada of this product.
 
 ## Try the client
 
