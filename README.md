@@ -7,15 +7,20 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 ## What works today
 
 - A StatCan client (`app/services/statcan.py`) that fetches the latest N periods for a series by vector ID.
-- Explicit errors for the two failure modes I found by testing the live service:
-  - A `FAILED` record inside an HTTP 200 reply (unknown series) raises `SeriesNotFoundError`.
-  - An HTTP 406 reply, whose body is not a list, raises `BadRequestError`.
+- Retries with exponential back-off and jitter (up to 4 attempts) for network failures, HTTP 5xx, 429 and 409 (locked table). Errors that waiting can't fix fail immediately instead.
+- Explicit error types, all subclasses of `StatCanError`:
+  - `SeriesNotFoundError`: a `FAILED` record inside an HTTP 200 reply (seen on the live service).
+  - `BadRequestError`: an HTTP 406 reply (seen on the live service).
+  - `RetryableError` and `TableLockedError`: 429 or 5xx, and 409, raised once the retries run out.
+  - `UnexpectedResponseError`: a reply that isn't the expected shape, or a success with no data points.
+  - plain `StatCanError`: any other non-200 status.
+- 11 offline tests that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
 
 ## What I'm building next
 
-1. Retries with exponential back-off and jitter for timeouts, 5xx and 429, and explicit handling of StatCan's overnight update window.
+1. Find out how StatCan behaves during its overnight update window (midnight to 8:30 am Eastern). The client already treats HTTP 409 as retryable, but I haven't observed what the service actually returns then.
 2. Tests for the client using mocked StatCan responses.
 3. The API itself: `GET /v1/unemployment` with region, age group and number of periods, plus `/v1/series` and `/v1/health`.
 4. A cache that expires when StatCan publishes its next monthly release.

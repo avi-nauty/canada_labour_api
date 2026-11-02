@@ -1,10 +1,10 @@
-# Canada Tech Pulse API: Phase 1 notes (what I found out about Statistics Canada's API)
+# Canada Labour API: Phase 1 notes (what I found out about Statistics Canada's API)
 
 Date: October 23, 2026
 
 ## What the project is
 
-Canada Tech Pulse API is a small FastAPI service I'm building that sits in front of Statistics Canada's Web Data Service (WDS). A caller asks a plain question ("unemployment rate, Ontario, ages 15-24, last 12 months") and my service translates it into the call StatCan understands, cleans up the reply, handles failures, and caches the result.
+Canada Labour API is a small FastAPI service I'm building that sits in front of Statistics Canada's Web Data Service (WDS). A caller asks a plain question ("unemployment rate, Ontario, ages 15-24, last 12 months") and my service translates it into the call StatCan understands, cleans up the reply, handles failures, and caches the result.
 
 It is a portfolio project that practises resilient API design. It is not a product with users, and the data is monthly, so it is not real-time. Similar libraries already exist (`stats-can`, `cansim`, `statcanR`), so the point is not novelty, it's building the same idea carefully and being able to explain every decision.
 
