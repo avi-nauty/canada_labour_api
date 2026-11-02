@@ -53,10 +53,11 @@ def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -
             raise SeriesNotFoundError(
                 f"Vector {vector_id} not found (responseStatusCode {code})"
             )
-        return record["object"]["vectorDataPoint"]
+        points = record["object"]["vectorDataPoint"]
+        if not points:
+            raise UnexpectedResponseError("StatCan returned no data points")
+        return points
     except (ValueError, KeyError, IndexError, TypeError) as e:
         raise UnexpectedResponseError(
             f"Unexpected reply shape from StatCan: {response.text[:200]}"
         ) from e
-
-    return record["object"]["vectorDataPoint"]

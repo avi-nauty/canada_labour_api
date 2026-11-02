@@ -9,9 +9,9 @@ from app.services.statcan import (
     RetryableError,
     SeriesNotFoundError,
     StatCanError,
-    UnexpectedResponseError,
     TableLockedError,
-    fetch_latest,
+    UnexpectedResponseError,
+    fetch_latest
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -144,6 +144,17 @@ def test_unexpected_4xx_fails_immediately_with_plain_statcan_error():
         fetch_latest(2062815, 12, client=client)
 
     assert excinfo.type is StatCanError
+    assert len(calls) == 1
+
+def test_empty_data_points_raises_and_is_not_retried():
+    empty = {
+        "status_code": 200,
+        "body": [{"status": "SUCCESS", "object": {"vectorId": 2062815, "vectorDataPoint": []}}],
+    }
+    calls = []
+    client = make_client(fixture_handler(empty, calls))
+    with pytest.raises(UnexpectedResponseError):
+        fetch_latest(2062815, 12, client=client)
     assert len(calls) == 1
 
 def test_unexpected_reply_shape_raises_and_is_not_retried():
