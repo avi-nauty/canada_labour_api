@@ -166,3 +166,28 @@ def test_unexpected_reply_shape_raises_and_is_not_retried():
         fetch_latest(2062815, 12, client=client)
 
     assert len(calls) == 1
+
+def test_non_json_reply_raises_and_is_not_retried():
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, text="<html>Down for maintenance</html>")
+
+    client = make_client(handler)
+
+    with pytest.raises(UnexpectedResponseError):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 1
+
+
+def test_empty_list_reply_raises_and_is_not_retried():
+    empty_list = {"status_code": 200, "body": []}
+    calls = []
+    client = make_client(fixture_handler(empty_list, calls))
+
+    with pytest.raises(UnexpectedResponseError):
+        fetch_latest(2062815, 12, client=client)
+
+    assert len(calls) == 1
