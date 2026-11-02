@@ -21,10 +21,9 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 ## What I'm building next
 
 1. Find out how StatCan behaves during its overnight update window (midnight to 8:30 am Eastern). The client already treats HTTP 409 as retryable, but I haven't observed what the service actually returns then.
-2. Tests for the client using mocked StatCan responses.
-3. The API itself: `GET /v1/unemployment` with region, age group and number of periods, plus `/v1/series` and `/v1/health`.
-4. A cache that expires when StatCan publishes its next monthly release.
-5. Docker, CI and deployment.
+2. The API itself: `GET /v1/unemployment` with region, age group and number of periods, plus `/v1/series` and `/v1/health`.
+3. A cache that expires when StatCan publishes its next monthly release.
+4. Docker, CI and deployment.
 
 ## Data source
 

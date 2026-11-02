@@ -1,7 +1,7 @@
 [project]
 name = "canada_labour_api"
 version = "0.1.0"
-   description = "A FastAPI service in front of Statistics Canada's labour force data (work in progress)"
+description = "A FastAPI service in front of Statistics Canada's labour force data (work in progress)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
