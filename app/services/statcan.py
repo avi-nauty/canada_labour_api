@@ -37,15 +37,15 @@ def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -
     body = [{"vectorId": vector_id, "latestN": periods}]
     response = client.post(URL, json=body)
     if response.status_code == 406:
-        raise BadRequestError(f"StatCan rejected the request: {response.text}")
+        raise BadRequestError(f"StatCan rejected the request: {response.text[:200]}")
     if response.status_code == 409:
-        raise TableLockedError(f"StatCan table is locked (HTTP 409): {response.text}")
+        raise TableLockedError(f"StatCan table is locked (HTTP 409): {response.text[:200]}")
     if response.status_code == 429:
-        raise RetryableError(f"StatCan rate limit hit (HTTP 429): {response.text}")
+        raise RetryableError(f"StatCan rate limit hit (HTTP 429): {response.text[:200]}")
     if response.status_code >= 500:
-        raise RetryableError(f"StatCan server error (HTTP {response.status_code}): {response.text}")
+        raise RetryableError(f"StatCan server error (HTTP {response.status_code}): {response.text[:200]}")
     if response.status_code != 200:
-        raise StatCanError(f"Unexpected HTTP status {response.status_code}: {response.text}")
+        raise StatCanError(f"Unexpected HTTP status {response.status_code}: {response.text[:200]}")
     try:
         record = response.json()[0]
         if record["status"] != "SUCCESS":
@@ -61,3 +61,4 @@ def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -
         raise UnexpectedResponseError(
             f"Unexpected reply shape from StatCan: {response.text[:200]}"
         ) from e
+
