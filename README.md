@@ -14,8 +14,8 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
   - `BadRequestError`: an HTTP 406 reply (seen on the live service).
   - `RetryableError` and `TableLockedError`: 429 or 5xx, and 409, raised once the retries run out.
   - `UnexpectedResponseError`: a reply that isn't the expected shape, or a success with no data points.
-  - 31 offline tests (13 for the client, 18 for the API endpoints) that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
-- 11 offline tests that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
+  - plain `StatCanError`: any other non-200 status.
+- 31 offline tests (13 for the client, 18 for the API endpoints) that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
 
