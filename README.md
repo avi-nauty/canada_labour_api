@@ -15,7 +15,7 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
   - `RetryableError` and `TableLockedError`: 429 or 5xx, and 409, raised once the retries run out.
   - `UnexpectedResponseError`: a reply that isn't the expected shape, or a success with no data points.
   - plain `StatCanError`: any other non-200 status.
-- 31 offline tests (13 for the client, 18 for the API endpoints) that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
+- 32 offline tests (13 for the client, 19 for the API endpoints) that run against fake StatCan replies, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
 
@@ -47,4 +47,4 @@ uv sync
 uv run fastapi dev app/main.py
 ```
 
-Then open http://127.0.0.1:8000/docs and try `/v1/unemployment`, or call it directly, for example `/v1/unemployment?region=ON&age_group=15-24&periods=12`. In a raw URL, write the `+` in `age_group=15+` as `%2B`.
+Then open http://127.0.0.1:8000/docs and try `/v1/unemployment`, or call it directly, for example `/v1/unemployment?region=ON&age_group=15-24&periods=12`.In a raw URL, age_group=15+works too, even though a browser sends+ as a space; the API accepts that one case on purpose.
