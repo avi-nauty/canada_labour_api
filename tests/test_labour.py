@@ -133,3 +133,10 @@ def test_other_failures_return_502(monkeypatch, error):
     )
     assert response.status_code == 502
     assert response.json()["detail"] == "Data source failed"
+
+def test_unencoded_plus_in_age_group_is_accepted(monkeypatch):
+    calls = fake_fetch(monkeypatch, result=sample_points())
+    response = client.get("/v1/unemployment?region=CA&age_group=15+&periods=12")
+    assert response.status_code == 200
+    assert calls == [(2062815, 12)]
+    assert response.json()["metadata"]["age_group"] == "15+"

@@ -11,6 +11,12 @@ class AgeGroup(StrEnum):
     ALL_15_PLUS = "15+"
     YOUTH_15_24 = "15-24"
 
+    @classmethod
+    def _missing_(cls, value):
+        if value == "15 ":
+            return cls.ALL_15_PLUS
+        return None
+
 
 @dataclass(frozen=True)
 class Series:
