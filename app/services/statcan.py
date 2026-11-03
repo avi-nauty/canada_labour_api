@@ -24,7 +24,7 @@ class UnexpectedResponseError(StatCanError):
 URL = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
 
 _ctx = ssl.create_default_context(cafile=certifi.where())
-_ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+
 
 _client = httpx.Client(verify=_ctx, timeout=httpx.Timeout(30, connect=5))
 
