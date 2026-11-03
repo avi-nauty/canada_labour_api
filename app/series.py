@@ -37,3 +37,6 @@ def get_series(region: Region, age_group: AgeGroup) -> Series:
         raise SeriesNotMappedError(
             f"No series for region {region} and age group {age_group}"
         ) from None
+
+def list_series() -> list[tuple[Region, AgeGroup, Series]]:
+    return [(region, age, series) for (region, age), series in _SERIES.items()]
