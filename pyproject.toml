@@ -5,6 +5,7 @@ description = "A FastAPI service in front of Statistics Canada's labour force da
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi[standard]>=0.162.0",
     "httpx>=0.28.1",
     "tenacity>=9.2.1",
 ]
