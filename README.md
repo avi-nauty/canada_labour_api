@@ -47,4 +47,4 @@ uv sync
 uv run fastapi dev app/main.py
 ```
 
-Then open http://127.0.0.1:8000/docs and try `/v1/unemployment`, or call it directly, for example `/v1/unemployment?region=ON&age_group=15-24&periods=12`.In a raw URL, age_group=15+works too, even though a browser sends+ as a space; the API accepts that one case on purpose.
+Then open http://127.0.0.1:8000/docs and try `/v1/unemployment`, or call it directly, for example `/v1/unemployment?region=ON&age_group=15-24&periods=12`.In a raw URL, 'age_group=15+' works too, even though a browser sends '+' as a space; the API accepts that one case on purpose.
