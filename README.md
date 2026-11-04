@@ -20,12 +20,13 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 - Each retry of a failed StatCan call is logged as a warning with the error and the wait time, so a slow or locked upstream shows up in the logs.
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
+- A `Dockerfile` that builds the API into a container image. I built it and called the container on my own machine, and it fetched live data and served the second request from the cache.
 
 ## What I'm building next
 
 1. Check how StatCan behaves on a release morning. The one time I called it inside the overnight window (a night with no release) it returned a normal reply, so I still don't know what the service does around a release. The client already treats HTTP 409 as retryable.
 2. Check the cache on a real release morning, and extend the hardcoded release dates past January 2027.
-3. Docker, CI and deployment.
+3. Deploy to Google Cloud Run.
 
 ## Data source
 
@@ -50,3 +51,23 @@ uv run fastapi dev app/main.py
 ```
 
 Then open http://127.0.0.1:8000/docs and try `/v1/unemployment`, or call it directly, for example `/v1/unemployment?region=ON&age_group=15-24&periods=12`. In a raw URL, `age_group=15+` works too, even though a browser sends `+` as a space; the API accepts that one case on purpose.
+
+## Run with Docker
+
+Requires Docker.
+
+```
+docker build -t canada-labour-api .
+docker run --rm -p 8080:8080 -e PORT=8080 canada-labour-api
+```
+
+Then open http://localhost:8080/docs. The container listens on the port in the `PORT` variable (8080 if it isn't set), which is how Cloud Run tells a container where to listen.
+
+## Limitations
+
+- The data is monthly, so nothing here is real-time.
+- The cache lives in memory. It is empty after a restart or a scale-to-zero wake-up, and two simultaneous requests on an empty cache both call StatCan.
+- The release dates are hardcoded and end in January 2027. After the last one, only the 24-hour limit applies.
+- If StatCan fails when a cached entry has expired, the API returns an error. It does not serve the old data.
+- Only four series are mapped: Canada and Ontario, for ages 15 and over and 15 to 24.
+- Libraries that cover similar ground already exist (`stats-can`, `cansim` and `statcanR`). This project's value is the engineering around the data: error handling, caching and tests.
