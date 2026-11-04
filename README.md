@@ -21,12 +21,13 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
 - A `Dockerfile` that builds the API into a container image. I built it and called the container on my own machine, and it fetched live data and served the second request from the cache.
+- A live deployment on Google Cloud Run: https://canada-labour-api-2341874144.northamerica-northeast2.run.app (interactive docs at `/docs`). I did the first deploy from my machine with `gcloud` and called the live URL, which returned live StatCan data. It scales to zero when idle, so the first request after a quiet period is slower.
+- Two GitHub Actions workflows: `.github/workflows/tests.yml` runs the tests on every push, and `.github/workflows/deploy.yml` is set up to deploy to Cloud Run on pushes to `main` that change the app, authenticating to Google Cloud with Workload Identity Federation instead of a service account key.
 
 ## What I'm building next
 
 1. Check how StatCan behaves on a release morning. The one time I called it inside the overnight window (a night with no release) it returned a normal reply, so I still don't know what the service does around a release. The client already treats HTTP 409 as retryable.
 2. Check the cache on a real release morning, and extend the hardcoded release dates past January 2027.
-3. Deploy to Google Cloud Run.
 
 ## Data source
 
@@ -71,3 +72,35 @@ Then open http://localhost:8080/docs. The container listens on the port in the `
 - If StatCan fails when a cached entry has expired, the API returns an error. It does not serve the old data.
 - Only four series are mapped: Canada and Ontario, for ages 15 and over and 15 to 24.
 - Libraries that cover similar ground already exist (`stats-can`, `cansim` and `statcanR`). This project's value is the engineering around the data: error handling, caching and tests.
+
+## Deploy to Google Cloud Run
+
+This is the setup I followed, written down so I can repeat it for other projects. Names in capitals are placeholders. The service runs in `northamerica-northeast2` (Toronto).
+
+**One-time setup in the Google Cloud console**
+
+1. Create a project (Location: No organization), link a billing account and set a budget alert. A budget alert only warns and does not cap spending, so the instance limit in step 3 is the real cost control.
+2. Create a service account `github-deployer` with no key. Give it Cloud Run Source Developer and Service Usage Consumer on the project. Give it Service Account User on the project's default compute service account (`PROJECT_NUMBER-compute@developer.gserviceaccount.com`), and give that compute account Cloud Run Builder on the project. These are the roles Google's deploy-from-source page lists.
+
+**First deploy, from my machine**
+
+3. From the project root, on a clean `main`:
+
+```
+gcloud run deploy canada-labour-api --source . --region northamerica-northeast2 --max-instances 1 --allow-unauthenticated --project PROJECT_ID
+```
+
+Answer `y` when it offers to enable APIs and create the Artifact Registry repository. Google builds the image from the `Dockerfile`. `--max-instances 1` caps cost and keeps one shared in-memory cache. My own login does this first deploy, so it needs no pool or service account.
+
+**Keyless deploys from GitHub Actions (Workload Identity Federation)**
+
+4. In IAM & Admin, Workload Identity Federation, create a pool, then an OpenID Connect provider with issuer `https://token.actions.githubusercontent.com`, attribute mapping `google.subject` = `assertion.sub` and `attribute.repository` = `assertion.repository`, and the attribute condition `assertion.repository == 'OWNER/REPO'`. That condition limits access to this one repository.
+5. On the pool, use Grant access so that `attribute.repository` = `OWNER/REPO` can impersonate the service account `github-deployer`. This adds `roles/iam.workloadIdentityUser` on the service account.
+6. In the GitHub repository's Settings, under Secrets and variables, Actions, add two repository **variables** (not secrets): `WIF_PROVIDER`, the provider's full name (`projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER`), and `WIF_SERVICE_ACCOUNT`, the service account's email.
+7. Add `.github/workflows/deploy.yml` and push it only after step 6, because the workflow cannot log in without the variables. It deploys on pushes to `main` that change `app/`, the `Dockerfile` or the dependency files, and it can also be started by hand.
+
+**Things to remember**
+
+- Check the live service with `curl -i` (a GET), not `curl -I`. The `-I` flag sends HEAD, and the `/` route only answers GET, so it returns 405.
+- A deleted workload identity pool keeps its ID for about 30 days, so a replacement pool needs a different ID.
+- The first request after the service has been idle is slower, and the in-memory cache starts empty.
