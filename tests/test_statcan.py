@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import httpx
 import pytest
+import logging
 from tenacity import wait_none
 
 from app.services.statcan import (
@@ -87,6 +88,17 @@ def test_retries_503_then_succeeds():
 
     assert len(result) == 12
     assert len(calls) == 3
+
+def test_each_retry_is_logged(caplog):
+    caplog.set_level(logging.WARNING, logger="app.services.statcan")
+    success = load_fixture("sample_success.json")
+    responses = [(503, {}), (503, {}), (success["status_code"], success["body"])]
+    calls = []
+    client = make_client(sequence_handler(responses, calls))
+
+    fetch_latest(2062815, 12, client=client)
+
+    assert len(caplog.records) == 2
 
 def test_503_every_time_gives_up_after_four_calls():
     always_503 = {"status_code": 503, "body": {}}

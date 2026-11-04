@@ -7,7 +7,7 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
 ## What works today
 
 - A StatCan client (`app/services/statcan.py`) that fetches the latest N periods for a series by vector ID.
-- A FastAPI app (`app/main.py`) with `GET /v1/unemployment` (region, age group, number of periods), `GET /v1/series` and `GET /v1/health`. Bad input returns 422, an unmapped region and age group combination returns 404, a locked table returns 503 with a `Retry-After` header, and any other StatCan failure returns 502. Interactive docs are served at `/docs` when it runs.
+- A FastAPI app (`app/main.py`) with `GET /v1/unemployment` (region, age group, number of periods), `GET /v1/series` and `GET /v1/health`. Bad input returns 422, an unmapped region and age group combination returns 404, a locked table returns 503 with a `Retry-After` header, and any other StatCan failure returns 502. Interactive docs are served at `/docs` when it runs. Opening `/` redirects there.
 - Retries with exponential back-off and jitter (up to 4 attempts) for network failures, HTTP 5xx, 429 and 409 (locked table). Errors that waiting can't fix fail immediately instead.
 - An in-memory cache (`app/services/cache.py`) that keeps the latest 120 points per series and slices them to the requested number of periods. An entry is trusted for up to 24 hours, but once a scheduled release has passed and the stored data is still a month behind, it is rechecked every 5 minutes. Failed calls are never cached. The cache is empty after a restart, and two simultaneous requests on an empty cache both call StatCan. The release dates are hardcoded in the module.
 - Explicit error types, all subclasses of `StatCanError`:
@@ -16,7 +16,8 @@ A small FastAPI service that I'm building in front of Statistics Canada's Web Da
   - `RetryableError` and `TableLockedError`: 429 or 5xx, and 409, raised once the retries run out.
   - `UnexpectedResponseError`: a reply that isn't the expected shape, or a success with no data points.
   - plain `StatCanError`: any other non-200 status.
-- 43 offline tests (13 for the client, 19 for the API endpoints, 11 for the cache) that run against fake StatCan replies and a fake clock, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
+- 45 offline tests (14 for the client, 20 for the API endpoints, 11 for the cache) that run against fake StatCan replies and a fake clock, with no network. The 409, 429 and 5xx cases are simulated, since I haven't seen the live service return them.
+- Each retry of a failed StatCan call is logged as a warning with the error and the wait time, so a slow or locked upstream shows up in the logs.
 - Recorded StatCan replies in `tests/fixtures/` for offline testing.
 - Notes on the table structure and the four series I've confirmed (`notes.md`).
 

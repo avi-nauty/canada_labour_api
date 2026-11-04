@@ -141,3 +141,10 @@ def test_unencoded_plus_in_age_group_is_accepted(monkeypatch):
     assert response.status_code == 200
     assert calls == [2062815]
     assert response.json()["metadata"]["age_group"] == "15+"
+
+
+def test_root_redirects_to_docs():
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/docs"
+    

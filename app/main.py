@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from app.routers.labour import router
 
@@ -8,3 +9,6 @@ app = FastAPI(
     version="0.1.0",
 )
 app.include_router(router)
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")

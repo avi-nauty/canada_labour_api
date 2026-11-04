@@ -1,8 +1,8 @@
+import logging
 import ssl
 import certifi
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
-
+from tenacity import before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 class StatCanError(Exception):
     pass
@@ -22,6 +22,7 @@ class UnexpectedResponseError(StatCanError):
     pass
 
 URL = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
+logger = logging.getLogger(__name__)
 
 _ctx = ssl.create_default_context(cafile=certifi.where())
 
@@ -32,6 +33,7 @@ _client = httpx.Client(verify=_ctx, timeout=httpx.Timeout(30, connect=5))
     retry=retry_if_exception_type((RetryableError, TableLockedError, httpx.TransportError)),
     stop=stop_after_attempt(4),
     wait=wait_random_exponential(multiplier=1, max=10),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
     reraise=True)
 def fetch_latest(vector_id: int, periods: int, client: httpx.Client = _client) -> list[dict]:
     body = [{"vectorId": vector_id, "latestN": periods}]
