@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.models import SOURCE, DataPoint, Metadata, UnemploymentResponse
 from app.series import AgeGroup, Region, SeriesNotMappedError, get_series, list_series
+
+from app.services.cache import get_points
 from app.services.statcan import StatCanError, TableLockedError, fetch_latest
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def unemployment(
         raise HTTPException(status_code=404, detail=str(e))
 
     try:
-        points = fetch_latest(series.vector_id, periods)
+        points, fetched_at, cached = get_points(series.vector_id)
     except TableLockedError as e:
         logger.warning("StatCan table locked: %s", e)
         raise HTTPException(
@@ -59,8 +61,8 @@ def unemployment(
             frequency="monthly",
             source=SOURCE,
             vector_id=series.vector_id,
-            retrieved_at=datetime.now(timezone.utc),
-            cached=False,
+            retrieved_at=fetched_at,
+            cached=cached,
         ),
-        data=[DataPoint(ref_period=p["refPer"], value=p.get("value")) for p in points],
+        data=[DataPoint(ref_period=p["refPer"], value=p.get("value")) for p in points[-periods:]],
     )

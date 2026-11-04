@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -29,13 +30,13 @@ def sample_points() -> list[dict]:
 def fake_fetch(monkeypatch, result=None, error=None) -> list:
     calls = []
 
-    def fake(vector_id, periods):
-        calls.append((vector_id, periods))
+    def fake(vector_id):
+        calls.append(vector_id)
         if error is not None:
             raise error
-        return result
+        return result, datetime(2026, 11, 3, 22, 46, tzinfo=timezone.utc), False
 
-    monkeypatch.setattr("app.routers.labour.fetch_latest", fake)
+    monkeypatch.setattr("app.routers.labour.get_points", fake)
     return calls
 
 
@@ -58,7 +59,7 @@ def test_unemployment_success(monkeypatch):
     )
     assert response.status_code == 200
     body = response.json()
-    assert calls == [(2062815, 12)]
+    assert calls == [2062815]
     assert body["metadata"]["vector_id"] == 2062815
     assert body["metadata"]["region"] == "CA"
     assert body["metadata"]["age_group"] == "15+"
@@ -138,5 +139,5 @@ def test_unencoded_plus_in_age_group_is_accepted(monkeypatch):
     calls = fake_fetch(monkeypatch, result=sample_points())
     response = client.get("/v1/unemployment?region=CA&age_group=15+&periods=12")
     assert response.status_code == 200
-    assert calls == [(2062815, 12)]
+    assert calls == [2062815]
     assert response.json()["metadata"]["age_group"] == "15+"
